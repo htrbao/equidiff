@@ -12,7 +12,7 @@ from equi_diffpo.model.equi.equi_obs_encoder import EquivariantObsEnc
 
 def create_random_input():
     input = dict()
-    input['agentview_image'] = torch.randn(batch_size, seq_len, 3, 84, 84).cuda(1)
+    input['agentview_image'] = torch.zeros(batch_size, seq_len, 3, 84, 84).cuda(1); input['agentview_image'][:, :, :, 0:10, 0:10] = 1
     input['robot0_eye_in_hand_image'] = torch.randn(batch_size, seq_len, 3, 84, 84).cuda(1)
     input['robot0_eef_pos'] = torch.randn(batch_size, seq_len, 3).cuda(1)
     input['robot0_eef_quat'] = torch.randn(batch_size, seq_len, 4).cuda(1)
@@ -91,8 +91,8 @@ x_transformed = x
 with torch.no_grad():
     for g in embedder.group.testing_elements:
         x_transformed = rotate_input(embedder, x, g)
-        y_new = embedder(x_transformed)
+        y_new = embedder(x_transformed).reshape(batch_size * seq_len, -1)
 
-        y_transformed = enn.GeometricTensor(embedder(x), embedder.enc_out.out_type).transform(g).tensor
+        y_transformed = enn.GeometricTensor(embedder(x).reshape(batch_size * seq_len, -1), embedder.enc_out.out_type).transform(g).tensor
         err = (y_transformed - y_new).abs().mean()
         print(torch.allclose(y_new, y_transformed, atol=1e-4), g, err)
